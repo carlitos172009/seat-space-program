@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Theatre Seat Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
+    <h1 class="text-2xl font-bold mb-4">🎭 Don Bosco Theatre</h1>
+
+    <!-- Seat Grid -->
+    <div id="seatGrid" class="grid grid-cols-6 gap-2 mb-6"></div>
+
+    <!-- Controls -->
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <label class="font-semibold">Ticket Type:</label>
+        <select id="ticketType" class="border p-2 rounded ml-2">
+          <option value="adult">Adult ($10)</option>
+          <option value="child">Child ($5)</option>
+        </select>
+      </div>
+
+      <button id="buyBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        Confirm Purchase
+      </button>
+    </div>
+
+    <!-- Cart -->
+    <div>
+      <h2 class="text-lg font-semibold mb-2">🛒 Cart</h2>
+      <p id="selectedSeats">No seats selected</p>
+      <p id="totalPrice" class="font-bold mt-1">$0</p>
+    </div>
+  </div>
+
+  <script>
+    const rows = 5;
+    const cols = 6;
+
+    const seatGrid = document.getElementById("seatGrid");
+    const selectedSeatsText = document.getElementById("selectedSeats");
+    const totalPriceText = document.getElementById("totalPrice");
+    const ticketTypeSelect = document.getElementById("ticketType");
+
+    let selectedSeats = [];
+
+    // 🔴 MOCK occupied seats (will come from Firebase later)
+    const occupiedSeats = ["A1", "B3", "C2"];
+
+    function seatId(row, col) {
+      return String.fromCharCode(65 + row) + (col + 1);
+    }
+
+    function renderSeats() {
+      seatGrid.innerHTML = "";
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const id = seatId(r, c);
+          const seat = document.createElement("div");
+
+          seat.textContent = id;
+          seat.className = "p-3 text-center rounded cursor-pointer";
+
+          if (occupiedSeats.includes(id)) {
+            seat.classList.add("bg-red-400", "cursor-not-allowed");
+          } else if (selectedSeats.includes(id)) {
+            seat.classList.add("bg-green-400");
+          } else {
+            seat.classList.add("bg-gray-300");
+          }
+
+          seat.addEventListener("click", () => {
+            if (occupiedSeats.includes(id)) return;
+
+            if (selectedSeats.includes(id)) {
+              selectedSeats = selectedSeats.filter(s => s !== id);
+            } else {
+              selectedSeats.push(id);
+            }
+
+            console.log("Selected seats:", selectedSeats);
+
+            renderSeats();
+            updateCart();
+          });
+
+          seatGrid.appendChild(seat);
+        }
+      }
+    }
+
+    function updateCart() {
+      if (selectedSeats.length === 0) {
+        selectedSeatsText.textContent = "No seats selected";
+        totalPriceText.textContent = "$0";
+        return;
+      }
+
+      const type = ticketTypeSelect.value;
+      const price = type === "adult" ? 10 : 5;
+
+      selectedSeatsText.textContent = "Seats: " + selectedSeats.join(", ");
+      totalPriceText.textContent = "Total: $" + (selectedSeats.length * price);
+    }
+
+    ticketTypeSelect.addEventListener("change", updateCart);
+
+    document.getElementById("buyBtn").addEventListener("click", () => {
+      if (selectedSeats.length === 0) {
+        alert("Select at least one seat!");
+        return;
+      }
+
+      console.log("PURCHASE DATA:", {
+        seats: selectedSeats,
+        type: ticketTypeSelect.value
+      });
+
+      alert("Mock purchase successful!");
+
+      // Reset
+      selectedSeats = [];
+      renderSeats();
+      updateCart();
+    });
+
+    renderSeats();
+  </script>
+
+</body>
+</html>
