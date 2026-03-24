@@ -1,108 +1,163 @@
-<script>
-  const rows = 5;
-  const cols = 6;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Theatre Seat Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
 
-  const seatGrid = document.getElementById("seatGrid");
-  const selectedSeatsText = document.getElementById("selectedSeats");
-  const totalPriceText = document.getElementById("totalPrice");
-  const ticketTypeSelect = document.getElementById("ticketType");
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow">
+    <h1 class="text-2xl font-bold mb-4">🎭 Don Bosco Theatre</h1>
 
-  // ✅ Now stores objects instead of strings
-  let selectedSeats = [];
+    <!-- Seat Grid -->
+    <div id="seatGrid" class="grid grid-cols-6 gap-2 mb-6"></div>
 
-  // 🔴 MOCK occupied seats
-  let occupiedSeats = ["A1", "B3", "C2"];
+    <!-- Buy Button -->
+    <button id="buyBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6">
+      Confirm Purchase
+    </button>
 
-  function seatId(row, col) {
-    return String.fromCharCode(65 + row) + (col + 1);
-  }
+    <!-- Cart -->
+    <div>
+      <h2 class="text-lg font-semibold mb-2">🛒 Cart</h2>
+      <div id="cartContainer"></div>
+      <p id="totalPrice" class="font-bold mt-2">$0</p>
+    </div>
+  </div>
 
-  function renderSeats() {
-    seatGrid.innerHTML = "";
+  <script>
+    const rows = 5;
+    const cols = 6;
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const id = seatId(r, c);
-        const seat = document.createElement("div");
+    const seatGrid = document.getElementById("seatGrid");
+    const cartContainer = document.getElementById("cartContainer");
+    const totalPriceText = document.getElementById("totalPrice");
 
-        seat.textContent = id;
-        seat.className = "p-3 text-center rounded cursor-pointer";
+    // ✅ Selected seats now store objects
+    let selectedSeats = [];
 
-        if (occupiedSeats.includes(id)) {
-          seat.classList.add("bg-red-400", "cursor-not-allowed");
-        } else if (selectedSeats.find(s => s.id === id)) {
-          seat.classList.add("bg-green-400");
-        } else {
-          seat.classList.add("bg-gray-300");
-        }
+    // 🔴 Mock occupied seats
+    let occupiedSeats = ["A1", "B3", "C2"];
 
-        seat.addEventListener("click", () => {
-          if (occupiedSeats.includes(id)) return;
+    function seatId(row, col) {
+      return String.fromCharCode(65 + row) + (col + 1);
+    }
 
-          const existing = selectedSeats.find(s => s.id === id);
+    function renderSeats() {
+      seatGrid.innerHTML = "";
 
-          if (existing) {
-            // remove seat
-            selectedSeats = selectedSeats.filter(s => s.id !== id);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const id = seatId(r, c);
+          const seat = document.createElement("div");
+
+          seat.textContent = id;
+          seat.className = "p-3 text-center rounded cursor-pointer";
+
+          if (occupiedSeats.includes(id)) {
+            seat.classList.add("bg-red-400", "cursor-not-allowed");
+          } else if (selectedSeats.find(s => s.id === id)) {
+            seat.classList.add("bg-green-400");
           } else {
-            // ✅ store seat WITH type
-            selectedSeats.push({
-              id: id,
-              type: ticketTypeSelect.value
-            });
+            seat.classList.add("bg-gray-300");
           }
 
-          console.log("Selected seats:", selectedSeats);
+          seat.addEventListener("click", () => {
+            if (occupiedSeats.includes(id)) return;
 
-          renderSeats();
-          updateCart();
-        });
+            const existing = selectedSeats.find(s => s.id === id);
 
-        seatGrid.appendChild(seat);
+            if (existing) {
+              selectedSeats = selectedSeats.filter(s => s.id !== id);
+            } else {
+              // ✅ Default type = adult
+              selectedSeats.push({
+                id: id,
+                type: "adult"
+              });
+            }
+
+            renderSeats();
+            renderCart();
+          });
+
+          seatGrid.appendChild(seat);
+        }
       }
     }
-  }
 
-  function updateCart() {
-    if (selectedSeats.length === 0) {
-      selectedSeatsText.textContent = "No seats selected";
-      totalPriceText.textContent = "$0";
-      return;
+    function renderCart() {
+      cartContainer.innerHTML = "";
+
+      if (selectedSeats.length === 0) {
+        cartContainer.innerHTML = "<p>No seats selected</p>";
+        totalPriceText.textContent = "$0";
+        return;
+      }
+
+      let total = 0;
+
+      selectedSeats.forEach((seat, index) => {
+        const price = seat.type === "adult" ? 10 : 5;
+        total += price;
+
+        const row = document.createElement("div");
+        row.className = "flex justify-between items-center mb-2";
+
+        row.innerHTML = `
+          <span>${seat.id}</span>
+
+          <select data-index="${index}" class="border p-1 rounded">
+            <option value="adult" ${seat.type === "adult" ? "selected" : ""}>Adult ($10)</option>
+            <option value="child" ${seat.type === "child" ? "selected" : ""}>Child ($5)</option>
+          </select>
+
+          <span>$${price}</span>
+        `;
+
+        cartContainer.appendChild(row);
+      });
+
+      totalPriceText.textContent = "Total: $" + total;
+
+      // ✅ Handle type change per seat
+      document.querySelectorAll("select").forEach(select => {
+        select.addEventListener("change", (e) => {
+          const index = e.target.dataset.index;
+          selectedSeats[index].type = e.target.value;
+
+          console.log("Updated seats:", selectedSeats);
+
+          renderCart();
+        });
+      });
     }
 
-    let total = 0;
+    document.getElementById("buyBtn").addEventListener("click", () => {
+      if (selectedSeats.length === 0) {
+        alert("Select at least one seat!");
+        return;
+      }
 
-    selectedSeats.forEach(seat => {
-      total += seat.type === "adult" ? 10 : 5;
+      console.log("PURCHASE DATA:", selectedSeats);
+
+      // ✅ Block purchased seats
+      selectedSeats.forEach(seat => {
+        occupiedSeats.push(seat.id);
+      });
+
+      alert("Purchase successful!");
+
+      // Reset
+      selectedSeats = [];
+      renderSeats();
+      renderCart();
     });
 
-    selectedSeatsText.textContent =
-      "Seats: " +
-      selectedSeats.map(s => `${s.id} (${s.type})`).join(", ");
-
-    totalPriceText.textContent = "Total: $" + total;
-  }
-
-  document.getElementById("buyBtn").addEventListener("click", () => {
-    if (selectedSeats.length === 0) {
-      alert("Select at least one seat!");
-      return;
-    }
-
-    console.log("PURCHASE DATA:", selectedSeats);
-
-    // ✅ Move selected seats into occupied
-    selectedSeats.forEach(seat => {
-      occupiedSeats.push(seat.id);
-    });
-
-    alert("Purchase successful!");
-
-    // Reset
-    selectedSeats = [];
     renderSeats();
-    updateCart();
-  });
+    renderCart();
+  </script>
 
-  renderSeats();
-</script>
+</body>
+</html>
